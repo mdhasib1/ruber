@@ -1,9 +1,9 @@
 const nodemailer = require("nodemailer");
-const env = require('dotenv');
+const env = require("dotenv");
 
 env.config();
 
-const sendEmail = async ({ subject, customizedMessage, send_to, sent_from }) => {
+const sendEmail = async ({ subject, customizedMessage, send_to, sent_from, attachment }) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 587,
@@ -31,6 +31,7 @@ const sendEmail = async ({ subject, customizedMessage, send_to, sent_from }) => 
       'Importance': 'High',
       'List-Unsubscribe': '<mailto:unsubscribe@rubertogo.com>',
     },
+    attachments: attachment ? [attachment] : [],  
   };
 
   try {
@@ -42,18 +43,3 @@ const sendEmail = async ({ subject, customizedMessage, send_to, sent_from }) => 
 };
 
 module.exports = sendEmail;
-
-
-// 1. welcome email to new users
-// 2. booking confirmation email
-// 3. booking cancellation email
-// 4. extended booking email
-// 5. Admin email for new bookings
-// 6. Admin email for booking cancellations
-// 7. Admin email for extended bookings
-// 8. Admin email for new user registrations
-// 9. Admin email for partner engagement requests 
-// 10. 1 hours before booking start email
-// 11. 1 hours remaining email for extended bookings 
-// 12. Review email after booking completion
-// 13. Admin email for new reviews

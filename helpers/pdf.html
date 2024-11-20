@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contract Agreement</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+      body {
+        font-family: "Helvetica Neue", Helvetica, sans-serif;
+        color: #4d4d4d;
+        background-color: #f5f5f5;
+        max-width: 800px;
+        margin: auto;
+        line-height: 1.6;
+      }
+      .header {
+        background: linear-gradient(90deg, #ff0707, #ff4c4c);
+        color: #ffffff;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+      }
+      .header h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 1px;
+      }
+      .section {
+        background-color: #ffffff;
+        padding: 20px;
+        border: 1px solid #e2e3e5;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      h3 {
+        font-size: 20px;
+        color: #004d99;
+        margin-bottom: 8px;
+      }
+      p {
+        font-size: 14px;
+        margin: 6px 0;
+      }
+      .footer {
+        font-size: 14px;
+        color: #999;
+        text-align: center;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Contract Header -->
+    <div class="header">
+      <h2>Ruberto Go - Contract Agreement</h2>
+      <p>Contract No: {{contractNumber}} | Date: {{date}}</p>
+    </div>
+
+    <!-- Company and Client Information in Grid Layout -->
+    <div class="section grid">
+      <div>
+        <h3>Company Information</h3>
+        <p>{{companyName}}</p>
+        <p>{{companyAddress}}</p>
+        <p>Phone: {{companyPhone}}</p>
+        <p>Email: {{companyEmail}}</p>
+      </div>
+      <div>
+        <h3>Client Information</h3>
+        <p><strong>Name:</strong> {{clientName}}</p>
+        <p><strong>Address:</strong> {{clientAddress}}</p>
+        <p><strong>Date of Birth:</strong> {{clientDOB}}</p>
+        <p><strong>Phone:</strong> {{clientPhone}}</p>
+        <p><strong>Email:</strong> {{clientEmail}}</p>
+      </div>
+    </div>
+
+    <!-- Driver Information if available -->
+    <div class="section">
+      <h3>Driver Information</h3>
+      <p><strong>Name:</strong> {{driverName}}</p>
+      <p><strong>Address:</strong> {{driverAddress}}</p>
+      <p><strong>Phone:</strong> {{driverPhone}}</p>
+    </div>
+
+    <!-- Rental and Pricing Details -->
+    <div class="section grid">
+      <div>
+        <h3>Rental Information</h3>
+        <p><strong>Pickup Location:</strong> {{pickupLocation}}</p>
+        <p><strong>Dropoff Location:</strong> {{dropoffLocation}}</p>
+        <p><strong>Rental Period:</strong> {{rentalPeriod}}</p>
+      </div>
+      <div>
+        <h3>Pricing Details</h3>
+        <p><strong>Price Per Hour:</strong> {{priceperhour}} hours</p>
+        <p><strong>Total Cost:</strong>$ {{totalPrice}}</p>
+      </div>
+    </div>
+
+    <!-- Vehicle and Insurance Information -->
+    <div class="section grid">
+      <div>
+        <h3>Vehicle Information</h3>
+        <p><strong>Vehicle:</strong> {{vehicle}}</p>
+        <p><strong>License Plate:</strong> {{licensePlate}}</p>
+        <p><strong>Fuel Type:</strong> {{fuelType}}</p>
+      </div>
+    </div>
+
+    <!-- Contract Rules -->
+    <div class="section" style="margin-top: 20px">
+      <h3
+        style="
+          color: #004d99;
+          text-align: center;
+          font-size: 20px;
+          margin-bottom: 20px;
+        "
+      >
+        Contract Rules and Terms
+      </h3>
+
+      <div
+        style="background-color: #ffffff; padding: 20px; border: 1px solid #ddd"
+      >
+        <!-- Rule 1 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            1. Your Contract with Us
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            By paying for the rental in this contract, you agree to all terms
+            and conditions within it. Please read it carefully. Contact a staff
+            member for clarification if needed.
+          </p>
+        </div>
+
+        <!-- Rule 2 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            2. Rental Period
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            The vehicle is available for the period specified in the contract.
+            Late returns incur a penalty of 30 CHF per hour, up to a maximum of
+            150 CHF. Insurance coverage lapses if returned after the agreed
+            time.
+          </p>
+        </div>
+
+        <!-- Rule 3 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            3. Customer Responsibility
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            The customer is liable for any damages and costs to restore the
+            vehicle to its original condition. Unauthorized repairs are
+            prohibited, and immediate notification is required for any incident
+            or theft.
+          </p>
+        </div>
+
+        <!-- Rule 4 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            4. Company Responsibility
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            Existing vehicle damages are noted before contract signing. The
+            vehicle has been maintained per manufacturer standards and is
+            road-ready at rental start.
+          </p>
+        </div>
+
+        <!-- Rule 5 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            5. Ownership and Personal Belongings
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            The customer is responsible for removing personal items at rental
+            end. The company is not liable for any items left behind.
+          </p>
+        </div>
+
+        <!-- Rule 6 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            6. Vehicle Usage Conditions
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            Only authorized drivers can operate the vehicle. It must not be
+            rented out or used for illegal activities, off-road driving, or
+            without insurance coverage.
+          </p>
+        </div>
+
+        <!-- Rule 7 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">7. Pricing</h4>
+          <p style="margin: 5px 0 0 0">
+            Agreed prices are exempt from VAT. The customer is liable for rental
+            fees, damage costs, fuel, legal fees, and any fines incurred during
+            the rental period.
+          </p>
+        </div>
+
+        <!-- Rule 8 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            8. Insurance
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            Insurance terms are accepted upon contract signing. The deductible
+            is the customer's responsibility unless otherwise noted.
+          </p>
+        </div>
+
+        <!-- Rule 9 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            9. Accident or Theft Procedures
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            In the event of an accident, avoid admitting fault and document all
+            details for the police and company. For theft, promptly report and
+            confirm the incident in writing.
+          </p>
+        </div>
+
+        <!-- Rule 10 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            10. Data Protection
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            By signing, you consent to the processing and storage of your
+            personal data related to this contract. We use your data for
+            analysis, credit control, and asset protection.
+          </p>
+        </div>
+
+        <!-- Rule 11 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            11. Contract Termination
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            The contract may be terminated if you breach significant terms.
+            Termination does not affect any outstanding obligations under the
+            contract.
+          </p>
+        </div>
+
+        <!-- Rule 12 -->
+        <div style="margin-bottom: 15px">
+          <h4 style="color: #004d99; font-size: 16px; margin: 0">
+            12. Governing Law
+          </h4>
+          <p style="margin: 5px 0 0 0">
+            This contract is governed by Swiss law. Disputes will be handled
+            fairly and, if unresolved, may proceed to a Swiss court in Lugano.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">{{contractImagesSection}}</div>
+  </body>
+</html>

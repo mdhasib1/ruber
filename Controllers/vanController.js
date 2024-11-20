@@ -1,5 +1,5 @@
 const Van = require('../Models/Van.Schema.js');
-
+const Booking = require('../Models/Booking.Schema.js'); 
 
 const getAllVans = async (req, res) => {
     try {
@@ -10,6 +10,40 @@ const getAllVans = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch vans." });
     }
 };
+
+const getBookedSlotsForVan = async (req, res) => {
+    const { vanId } = req.params;
+
+    try {
+        const bookings = await Booking.find({
+            vanId: vanId,
+            status: { $in: ['accepted', 'pending'] }
+        }).select('selectedSlots status');
+
+        if (!bookings || bookings.length === 0) {
+            return res.status(404).json({ message: "No booked slots found for this van." });
+        }
+
+        const bookedSlots = bookings.map((booking) => ({
+            selectedSlots: booking.selectedSlots.map((slot) => {
+                const [day, month, year] = slot.date.split("-"); // Split DD-MM-YYYY
+                const formattedDate = `${year}-${month}-${day}`; // Reformat to YYYY-MM-DD
+
+                return {
+                    date: formattedDate,
+                    time: slot.time,
+                };
+            }),
+            status: booking.status
+        }));
+
+        res.status(200).json(bookedSlots);
+    } catch (error) {
+        console.error("Error fetching booked slots:", error);
+        res.status(500).json({ message: "Failed to fetch booked slots for van." });
+    }
+};
+
 
 
 const getVanById = async (req, res) => {
@@ -179,5 +213,6 @@ module.exports = {
     getVanById,
     deleteVan,
     addContractImages,
-    removeContractImage
+    removeContractImage,
+    getBookedSlotsForVan
 };

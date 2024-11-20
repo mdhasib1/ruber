@@ -63,7 +63,7 @@ exports.updateBookingSettings = async (req, res, io) => {
 
         const notification = await createNotification(io, notificationData);
         const notifications = await fetchNotifications(adminUserId);
-        console.log("Fetched Notifications:", notifications);
+
 
       io.to(adminUserId.toString()).emit('bookingSettingsUpdated', {
             vanId,

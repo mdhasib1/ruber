@@ -2,6 +2,7 @@ const User = require("../Models/User.Schema");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../utils/Email");
+const Driver = require("../Models/Driver.Schema");
 
 const generateOtp = () => {
   const otp = crypto.randomInt(1000, 9999).toString();
@@ -14,7 +15,7 @@ const generateToken = (user, secret, expiresIn) => {
 };
 
 exports.register = async (req, res) => {
-  const { firstName, lastName, email, phone, address, bio } = req.body;
+  const { firstName, lastName, email, phone, address, timeZone } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -29,7 +30,7 @@ exports.register = async (req, res) => {
       email,
       phone,
       address,
-      bio,
+      timeZone,
       otp,
       otpExpires,
     });
@@ -165,20 +166,20 @@ exports.verifyOtp = async (req, res) => {
     user.otpExpires = undefined;
     await user.save();
 
-    const accessToken = generateToken(user, process.env.ACCESS_TOKEN_SECRET, "15m");
+    const accessToken = generateToken(user, process.env.ACCESS_TOKEN_SECRET, "7d");
     const refreshToken = generateToken(user, process.env.REFRESH_TOKEN_SECRET, "7d");
     user.refreshToken = refreshToken;
     await user.save();
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      secure: process.env.NODE_ENV === "development",
+      maxAge: 15 * 60 * 1000,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "development",
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
     res.status(200).json({
@@ -195,12 +196,10 @@ exports.verifyOtp = async (req, res) => {
 
 
 exports.sendLoginOtp = async (req, res) => {
-  console.log("sendLoginOtp", req.body);
   const { email } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    console.log("user", user);
     if (!user) {
       return res
         .status(404)
@@ -314,8 +313,7 @@ exports.sendLoginOtp = async (req, res) => {
       sent_from: "info@rubertogo.com",
     });
     
-    
-
+  
     res.status(201).json({ message: "OTP sent for login" });
   } catch (error) {
     console.error(error);
@@ -338,21 +336,24 @@ exports.existAccount = async (req, res) => {
   }
 };
 
+
 exports.userProfile = async (req, res) => {
-  const { email } = req.body;
+  const userId = req.user._id;
 
   try {
-    const user = await User.findOne({ email });
-
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(201).json({ user });
-  }
-  catch (error) {
+    const driver = await Driver.findOne({ userId });
+
+
+    res.status(200).json({ user, driver });
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to check user" });
+    res.status(500).json({ message: "Failed to fetch user profile" });
   }
-}
+};
+
 
 
 exports.updateProfile = async (req, res) => {
@@ -385,7 +386,7 @@ exports.updateProfile = async (req, res) => {
 
 
 exports.refreshToken = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies.refreshToken; 
   if (!refreshToken) {
     return res.status(401).json({ message: "No refresh token provided" });
   }
@@ -398,7 +399,18 @@ exports.refreshToken = async (req, res) => {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    const newAccessToken = generateToken(user, process.env.ACCESS_TOKEN_SECRET, "15m");
+    const newAccessToken = jwt.sign({ id: user._id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    
+    // Optional: renew refresh token to extend its life
+    const newRefreshToken = jwt.sign({ id: user._id, role: user.role }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "development",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({ accessToken: newAccessToken });
   } catch (error) {
@@ -406,6 +418,7 @@ exports.refreshToken = async (req, res) => {
     res.status(403).json({ message: "Invalid or expired refresh token" });
   }
 };
+
 
 
 
@@ -433,5 +446,20 @@ exports.logout = async (req, res) => {
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({ message: "Logout failed" });
+  }
+};
+
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().populate({
+      path: 'driver', // Assuming 'driver' is the reference field in User schema
+      model: 'Driver', // Name of the Driver model
+      select: 'firstName lastName email phone driverAddress licenseFront licenseBack idDocumentFront idDocumentBack', // Fields to retrieve from Driver
+    });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch users" });
   }
 };

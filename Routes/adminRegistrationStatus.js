@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const isAdminRegistrationEnabled = false; 
+const isAdminRegistrationEnabled = true; 
 router.get('/admin-registration-status', (req, res) => {
   res.json({ isEnabled: isAdminRegistrationEnabled });
 });
