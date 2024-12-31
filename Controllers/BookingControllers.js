@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/Email");
 const cron = require("node-cron");
+const EarningsSettings = require("../Models/EarningsSettings.Schema.js");
 const moment = require("moment-timezone");
 const {
   createNotification,
@@ -20,6 +21,7 @@ const generateOtp = () => {
 };
 
 const createBooking = async (req, res, io) => {
+  console.log(req.body);
   const {
     vanId,
     selectedSlots,
@@ -32,10 +34,11 @@ const createBooking = async (req, res, io) => {
     timeZone,
     idDocumentFront,
     idDocumentBack,
-    LicenseFront,
-    LicenseBack,
+    licenseFront,
+    licenseBack,
     isNotDriver,
     packageId,
+    referralCode,
   } = req.body;
 
   let driverInfo = {};
@@ -91,19 +94,22 @@ const createBooking = async (req, res, io) => {
        });
     }
 
+
     let user = await User.findOne({ email });
     if (!user) {
+      const referralCodeGenerated = crypto.randomBytes(3).toString("hex").toUpperCase();
       user = new User({
         firstName,
         lastName,
         email,
         phone,
+        referralCode:referralCodeGenerated,
         address,
         idDocumentFront,
         idDocumentBack,
         timeZone,
-        licenseFront: LicenseFront,
-        licenseBack: LicenseBack,
+        licenseFront: licenseFront,
+        licenseBack: licenseBack,
       });
       const { otp, otpExpires } = generateOtp();
       user.otp = otp;
@@ -217,8 +223,8 @@ const createBooking = async (req, res, io) => {
       user.address = address || user.address;
       user.idDocumentFront = idDocumentFront || user.idDocumentFront;
       user.idDocumentBack = idDocumentBack || user.idDocumentBack;
-      user.licenseFront = LicenseFront || user.licenseFront;
-      user.licenseBack = LicenseBack || user.licenseBack;
+      user.licenseFront = licenseFront || user.licenseFront;
+      user.licenseBack = licenseBack || user.licenseBack;
       user.timeZone = timeZone || user.timeZone;
       const { otp, otpExpires } = generateOtp();
       user.otp = otp;
@@ -348,7 +354,71 @@ const createBooking = async (req, res, io) => {
       }
     }
 
-   
+    console.log("Referral code:", referralCode);
+
+    let referralEarning = 0;
+    let referralUser = null;
+    if (referralCode) {
+      referralUser = await User.findOne({ referralCode });
+      if (referralUser) {
+        const referralSettings = await EarningsSettings.findOne();
+        referralEarning = (totalPrice * referralSettings.referralpercentage) / 100;
+
+        referralUser.earnings += referralEarning;
+        referralUser.transactionHistory.push({
+          type: "earning",
+          amount: referralEarning,
+          description: `Referral commission from booking`,
+        });
+        await referralUser.save();
+      }
+    }
+
+    const van = await Van.findById(vanId);
+
+    if (!van) {
+      return res.status(404).json({ error: "Van not found" });
+    }
+
+    const Vanowner = await User.findOne(van.userId)
+    const admin = await User.findOne({ role: "admin" });
+
+    if (!admin) {
+      return res.status(500).json({ error: "Admin not found" });
+    }
+
+    const settings = await EarningsSettings.findOne();
+
+    const partnerPercentage = settings.partnerpercentage;
+    const adminPercentage = settings.adminpercentage;
+
+    let partnerEarning = 0;
+    let adminEarning = 0;
+
+    if (!Vanowner || Vanowner.role !== "partner") {
+      adminEarning = totalPrice - referralEarning;
+    } else {
+      partnerEarning = ((totalPrice - referralEarning) * partnerPercentage) / 100;
+      adminEarning = totalPrice - referralEarning - partnerEarning;
+    
+      Vanowner.earnings += partnerEarning;
+      Vanowner.transactionHistory.push({
+        type: "earning",
+        amount: partnerEarning,
+        description: `Partner commission from booking`,
+      });
+      await Vanowner.save();
+    }
+    
+    admin.earnings += adminEarning;
+
+    admin.transactionHistory.push({
+      type: "earning",
+      amount: adminEarning,
+      description: `Admin commission from booking`,
+    });
+
+    await admin.save();
   
     const booking = new Booking({
       userId: user._id,
@@ -360,15 +430,12 @@ const createBooking = async (req, res, io) => {
       endTime: endTime,
       timeZone: timeZone,
       totalPrice,
+      referralCodeUsed: referralCode || null,
+      referralCommission: referralEarning,
       packageId: packageId || null,
     });
 
     const savebooking = await booking.save();
-
-    const van = await Van.findById(vanId);
-    if (!van) {
-      return res.status(404).json({ error: "Van not found" });
-    }
 
     const vanImage = van.images[0];
     const vanName = van.name.en || van.name;
@@ -435,7 +502,6 @@ const createBooking = async (req, res, io) => {
       bookingId: savebooking._id,
     });
   } catch (error) {
-    console.log("Error in createBooking:", error);
     res.status(500).json({ error: "Failed to create booking request." });
   }
 };
@@ -1025,6 +1091,51 @@ const getBookingMonitoringData = async (req, res) => {
   }
 };
 
+const bookedSolt = async (req, res) => {
+  try {
+    const { vanId, date } = req.query;
+    const bookings = await Booking.find({
+      vanId,
+      startDate: date,
+      status: { $in: ["pending", "accepted"] },
+    });
+
+    const bookedSlots = bookings.reduce((acc, booking) => {
+      booking.selectedSlots.forEach((slot) => {
+        acc.push(slot.time);
+      });
+      return acc;
+    }, []);
+
+    res.json(bookedSlots);
+  } catch (error) {
+    console.error("Error fetching booked slots:", error);
+    res.status(500).json({ error: "Failed to fetch booked slots" });
+  }
+};
+
+const PartnerBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const van = await Van.findOne({ userId });
+    if (!van) {
+      return res.status(404).json({ error: "Van not found" });
+    }
+
+    const vanId = van._id;
+
+    const bookings = await Booking.find({ vanId })
+      .populate("userId", "firstName lastName email phone")
+      .populate("vanId", "name images plateNumber"); 
+
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching partner bookings:", error);
+    res.status(500).json({ error: "Failed to fetch partner bookings" });
+  }
+};
+
+
 module.exports = {
   createBooking,
   switchVan,
@@ -1037,4 +1148,6 @@ module.exports = {
   getPendingBookings,
   completePendingPayment,
   getBookingMonitoringData,
+  PartnerBookings,
 };
+

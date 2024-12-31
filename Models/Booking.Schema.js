@@ -39,6 +39,12 @@ const BookingSchema = new mongoose.Schema(
       ref: 'Package',
       default: null, 
     },
+    referralCodeUsed: { type: String, default: null },
+    referralCommission: { type: Number, default: 0 },
+    referralCommissionStatus: { type: String, enum: ['pending', 'approved'], default: 'pending' },
+    partnerEarning: { type: Number, default: 0 },
+    partnerEarningStatus: { type: String, enum: ['pending', 'approved'], default: 'pending' },
+    adminEarning: { type: Number, default: 0 },
     selectedSlots: {
       type: [TimeSlotSchema],
       required: true,

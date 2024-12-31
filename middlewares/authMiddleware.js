@@ -3,6 +3,7 @@ const User = require("../Models/User.Schema");
 
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
+
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -27,7 +28,18 @@ const authorizeAdmin = (req, res, next) => {
   next();
 };
 
+const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden: You do not have access to this resource.' });
+    }
+    next();
+  };
+};
+
+
 module.exports = {
   authenticateToken,
   authorizeAdmin,
+  authorizeRoles,
 };

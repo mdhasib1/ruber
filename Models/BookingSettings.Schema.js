@@ -26,10 +26,10 @@ const BookingSettingsSchema = new mongoose.Schema({
         {
             date: { type: Date, required: true },
             hours: {
-                type: [String], // Ensure `hours` is defined as an array of strings
+                type: [String],
                 validate: {
                     validator: function(value) {
-                        return value.length > 0; // Ensure that `hours` array is never empty
+                        return value.length > 0;
                     },
                     message: "At least one hour must be specified."
                 }

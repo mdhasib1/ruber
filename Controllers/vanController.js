@@ -3,7 +3,7 @@ const Booking = require('../Models/Booking.Schema.js');
 
 const getAllVans = async (req, res) => {
     try {
-        const vans = await Van.find();
+        const vans = await Van.find({ status: 'approved' });
         res.status(200).json(vans);
     } catch (error) {
         console.error("Error fetching vans:", error);
@@ -11,23 +11,23 @@ const getAllVans = async (req, res) => {
     }
 };
 
+
 const getBookedSlotsForVan = async (req, res) => {
     const { vanId } = req.params;
-
     try {
         const bookings = await Booking.find({
             vanId: vanId,
             status: { $in: ['accepted', 'pending'] }
         }).select('selectedSlots status');
 
-        if (!bookings || bookings.length === 0) {
+        if (!bookings  || bookings.length === 0) {
             return res.status(404).json({ message: "No booked slots found for this van." });
         }
 
         const bookedSlots = bookings.map((booking) => ({
             selectedSlots: booking.selectedSlots.map((slot) => {
-                const [day, month, year] = slot.date.split("-"); // Split DD-MM-YYYY
-                const formattedDate = `${year}-${month}-${day}`; // Reformat to YYYY-MM-DD
+                const [day, month, year] = slot.date.split("-");
+                const formattedDate = `${year}-${month}-${day}`;
 
                 return {
                     date: formattedDate,
@@ -62,70 +62,122 @@ const getVanById = async (req, res) => {
 };
 
 const addVan = async (req, res) => {
-    console.log('Request body:', req.body);
+    const {
+      name,
+      description,
+      images,
+      plateNumber,
+      externalDimensions,
+      internalDimensions,
+      weight,
+      location,
+      dailyPricing,
+      restrictedBookingHours,
+      fuelType,
+      transmissionType,
+      optionalFeatures,
+      contractImages,
+      trackingDevice,
+    } = req.body;
+  
+    if (!name || !description || !plateNumber || !fuelType || !transmissionType || !dailyPricing) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const formattedDailyPricing = Object.keys(dailyPricing).map((day) => ({
+      day,
+      pricePerHour: parseFloat(dailyPricing[day].pricePerHour),
+      kilometers: parseFloat(dailyPricing[day].kilometers),
+      extraPerKm: parseFloat(dailyPricing[day].extraPerKm),
+    }));
+  
+    const newVan = new Van({
+      userId: req.user._id,
+      name,
+      description,
+      images,
+      plateNumber,
+      externalDimensions,
+      internalDimensions,
+      weight,
+      location,
+      dailyPricing: formattedDailyPricing, 
+      restrictedBookingHours,
+      fuelType,
+      transmissionType,
+      optionalFeatures,
+      contractImages,
+      trackingDevice,
+      status: 'approved',
+    });
+  
+    try {
+      const savedVan = await newVan.save();
+      console.log("Van saved successfully:", savedVan);
+      res.status(201).json(savedVan);
+    } catch (error) {
+      console.error("Error saving van:", error);
+      res.status(500).json({ message: "Failed to save van. Please try again later." });
+    }
+  };
+
+  const addVanPartner = async (req, res) => {
+    console.log("Request body:", req.body);
+    console.log("Request user:", req.user);
+    const userId = req.user._id;
     const {
         name,
         description,
         images,
         plateNumber,
-        pricePerHour,
         externalDimensions,
         internalDimensions,
         weight,
         location,
+        restrictedBookingHours,
+        fuelType,
+        transmissionType,
         optionalFeatures,
         contractImages,
-        fuelType,
-        transmissionType
+        trackingDevice,
     } = req.body;
 
-    if (!name?.en || !description?.en || !name?.it || !description?.it) {
-        return res.status(400).json({
-            message: "Nome e descrizione in inglese e in italiano sono obbligatori."
-        });
+    if (!name || !description || !plateNumber || !fuelType || !transmissionType ) {
+        return res.status(400).json({ message: "Missing required fields." });
     }
 
-
-    const availableDate = new Date();
-    availableDate.setHours(0, 0, 0, 0); 
-    const availableTime = new Date();
-    availableTime.setMinutes(0, 0, 0);
-    availableTime.setHours(availableTime.getHours() + 1);
-    const formattedContractImages = contractImages?.map((image) => ({
-        damageType: image.damaged || image.damageType,
-        description: image.description,
-        image: image.image
-    })) || [];
-
     const newVan = new Van({
+        userId: userId,
         name,
         description,
         images,
         plateNumber,
-        availableDate,
-        availableTime,
-        pricePerHour,
         externalDimensions,
         internalDimensions,
         weight,
         location,
-        optionalFeatures,
-        contractImages: formattedContractImages,
+        restrictedBookingHours,
         fuelType,
-        transmissionType
+        transmissionType,
+        optionalFeatures,
+        contractImages,
+        trackingDevice,
+        status: 'pending',
     });
 
     try {
         const savedVan = await newVan.save();
-        console.log('Van saved successfully:', savedVan);
+        console.log("Van saved successfully:", savedVan);
         res.status(201).json(savedVan);
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Error saving van:", error);
-        res.status(400).json({ message: "Impossibile salvare il furgone." });
+        res.status(500).json({ message: "Failed to save van. Please try again later." });
     }
 };
 
 
+  
 
 // Update a van by ID
 const updateVan = async (req, res) => {
@@ -206,6 +258,117 @@ const removeContractImage = async (req, res) => {
     }
 };
 
+const approveVan = async (req, res) => {
+    const { id } = req.params;
+    let { dailyPricing } = req.body;
+
+    if (!id || id === "null") {
+        return res.status(400).json({ message: "Invalid van ID." });
+    }
+
+    if (!Array.isArray(dailyPricing) || dailyPricing.length !== 7) {
+        return res.status(400).json({
+            message: "Daily pricing must be provided for all 7 days of the week.",
+        });
+    }
+
+    const daysOfWeek = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ];
+    dailyPricing = dailyPricing.map((pricing, index) => ({
+        day: daysOfWeek[index],
+        pricePerHour: pricing.pricePerHour,
+        kilometers: pricing.kilometers,
+        extraPerKm: pricing.extraPerKm,
+    }));
+
+    try {
+        const van = await Van.findById(id);
+
+        if (!van) {
+            return res.status(404).json({ message: "Van not found." });
+        }
+
+        if (van.status !== "pending") {
+            return res
+                .status(400)
+                .json({ message: "Van is not in a pending state." });
+        }
+
+        // Update dailyPricing and approve the van
+        van.dailyPricing = dailyPricing;
+        van.status = "approved";
+        await van.save();
+
+        res.status(200).json({ message: "Van approved successfully.", van });
+    } catch (error) {
+        console.error("Error approving van:", error);
+        res.status(500).json({ message: "Failed to approve van." });
+    }
+};
+
+
+const rejectVan = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || id === "null") {
+        return res.status(400).json({ message: "Invalid van ID." });
+    }
+
+    try {
+        const van = await Van.findById(id);
+
+        if (!van) {
+            return res.status(404).json({ message: "Van not found." });
+        }
+
+        if (van.status !== "pending") {
+            return res
+                .status(400)
+                .json({ message: "Van is not in a pending state." });
+        }
+
+        van.status = "rejected";
+        await van.save();
+
+        res.status(200).json({ message: "Van rejected successfully.", van });
+    } catch (error) {
+        console.error("Error rejecting van:", error);
+        res.status(500).json({ message: "Failed to reject van." });
+    }
+};
+
+
+const MyVans = async (req, res) => {
+    const userId = req.user._id;
+    console.log("User ID:", userId);
+    try {
+        const vans = await Van.find({ userId});
+        res.status(200).json(vans);
+    } catch (error) {
+        console.error("Error fetching vans:", error);
+        res.status(500).json({ message: "Failed to fetch vans." });
+    }
+}
+
+const getAllVansAdmin = async (req, res) => {
+    try {
+        const vans = await Van.find();
+        res.status(200).json(vans);
+    } catch (error) {
+        console.error("Error fetching vans:", error);
+        res.status(500).json({ message: "Failed to fetch vans." });
+    }
+};
+
+
+
 module.exports = {
     getAllVans,
     addVan,
@@ -214,5 +377,10 @@ module.exports = {
     deleteVan,
     addContractImages,
     removeContractImage,
-    getBookedSlotsForVan
+    getBookedSlotsForVan,
+    approveVan,
+    rejectVan,
+    MyVans,
+    addVanPartner,
+    getAllVansAdmin
 };

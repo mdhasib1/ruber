@@ -13,7 +13,7 @@ const createPreAuthorization = async (req, res) => {
   const { phone } = req.user;
 
   try {
-    // Use a mutex lock to prevent concurrent execution
+
     const lockKey = `preAuthLock:${bookingId}`;
     const lockAcquired = await acquireLock(lockKey);
     if (!lockAcquired) {
@@ -32,16 +32,11 @@ const createPreAuthorization = async (req, res) => {
         throw new Error("No reusable payment method found.");
       }
 
-      // Fetch booking
       const booking = await Booking.findById(bookingId);
       if (!booking) {
         throw new Error("Booking not found.");
       }
 
-      // Upsert pre-authorization and prevent duplicates
-    
-
-      // Create Stripe pre-authorization payment intent
       const preAuthIntent = await stripe.paymentIntents.create({
         amount: 300 * 100,
         currency: "chf",
@@ -53,7 +48,6 @@ const createPreAuthorization = async (req, res) => {
         metadata: { purpose: "Pre-authorization hold" },
       });
 
-      console.log("Pre-authorization created successfully:", preAuthIntent.id);
 
       const preAuthorization = await PreAuthorization.findOneAndUpdate(
         { bookingId, status: 'Pending' },
@@ -84,16 +78,15 @@ const createPreAuthorization = async (req, res) => {
         });
       }
 
-      // Update pre-authorization and booking status
+
       preAuthorization.stripecreated = true;
       preAuthorization.emailSent = true;
       booking.status = 'accepted';
 
       await preAuthorization.save();
-      await booking.save();
+      const savebooking = await booking.save();
+      await createContractPDF(savebooking._id);
 
-      // Generate contract PDF and send email
-      await createContractPDF(booking._id);
 
       res.status(201).json({
         message: "Pre-authorization created successfully",

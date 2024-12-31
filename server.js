@@ -16,14 +16,17 @@ const packageRoutes = require('./Routes/packageRoutes');
 const contractRuleRoutes = require('./Routes/contractRuleRoutes');
 const PreAuthorizationRoutes = require('./Routes/preAuthorizationRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
+const fleet2TrackRoutes = require('./Routes/fleet2TrackRoutes');
 const faq = require('./Routes/FaqRoutes');
 const partnerRoutes = require('./Routes/partnerRoutes');
+const partnersRoutes = require('./Routes/PartnersRoutes')
 const cookieParser = require("cookie-parser");
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
 const cors = require('cors');
 const connectDB = require('./config/db');
 const dotenv = require('dotenv');
 const SitereviewRoutes = require("./Routes/SiteReviewRoutes");
+const path = require('path');
 
 
 dotenv.config();
@@ -62,7 +65,10 @@ app.use('/api', contractRuleRoutes);
 app.use('/api', adminRoutes(io));
 app.use('/api/reviews', SitereviewRoutes);
 app.use('/api', faq);
-app.use('/api', partnerRoutes);
+// app.use('/api', partnerRoutes);
+app.use('/api', partnersRoutes);
+app.use("/api/fleet2track", fleet2TrackRoutes);
+
 
 global.io = io;
 
@@ -114,6 +120,12 @@ app.get('/api/payment-session/:sessionId', async (req, res) => {
     }
   });
   
+
+const reactAppBuildPath = path.join(__dirname, '..', 'ruberdist');
+app.use(express.static(reactAppBuildPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(reactAppBuildPath, 'index.html'));
+});
 
 
 const PORT = process.env.PORT || 3000;

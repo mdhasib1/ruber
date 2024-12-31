@@ -18,11 +18,11 @@ exports.createPartner = async (req, res) => {
       phone,
       interest,
       recommendations,
+      role: 'partner',
     });
 
     await partner.save();
 
-    // Send a thank-you email to the partner
     await sendEmail({
       subject: "Thank You for Your Partnership Application",
       customizedMessage: `
@@ -131,7 +131,6 @@ exports.getAllPartners = async (req, res) => {
   }
 };
 
-// Delete a partner application by ID
 exports.deletePartner = async (req, res) => {
   try {
     const { id } = req.params;
@@ -147,3 +146,5 @@ exports.deletePartner = async (req, res) => {
     res.status(500).json({ message: 'Internal server error.', error: error.message });
   }
 };
+
+

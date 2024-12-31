@@ -1,5 +1,7 @@
 const BookingSettings = require('../Models/BookingSettings.Schema');
 const { createNotification, fetchNotifications } = require('../helpers/notificationHelper');
+const EarningsSettings = require('../Models/EarningsSettings.Schema');
+const User = require('../Models/User.Schema');
 
 exports.getBookingSettings = async (req, res, io, socketId) => {
     const { vanId } = req.params;
@@ -78,3 +80,60 @@ exports.updateBookingSettings = async (req, res, io) => {
         res.status(500).json({ message: "Failed to update booking settings." });
     }
 };
+
+
+exports.getEarningsSettings = async (req, res,io) => {
+  try {
+    const settings = await EarningsSettings.findOne();
+    res.status(200).json({ settings });
+  } catch (error) {
+    console.error("Error fetching earnings settings:", error);
+    res.status(500).json({ message: "Failed to fetch earnings settings." });
+  }
+};
+
+exports.updateEarningsSettings = async (req, res,io) => {
+  const { adminpercentage, partnerpercentage, referralpercentage, userpercentage } = req.body;
+  try {
+    let settings = await EarningsSettings.findOne();
+
+    if (!settings) {
+      settings = new EarningsSettings({
+        adminpercentage,
+        partnerpercentage,
+        referralpercentage,
+        userpercentage,
+      });
+    } else {
+      settings.adminpercentage = adminpercentage ?? settings.adminpercentage;
+      settings.partnerpercentage = partnerpercentage ?? settings.partnerpercentage;
+      settings.referralpercentage = referralpercentage ?? settings.referralpercentage;
+      settings.userpercentage = userpercentage ?? settings.userpercentage;
+    }
+
+    await settings.save();
+
+    res.status(200).json({ message: "Earnings settings updated successfully!", settings });
+  } catch (error) {
+    console.error("Error updating earnings settings:", error);
+    res.status(500).json({ message: "Failed to update earnings settings." });
+  }
+};
+
+exports.ValidedreferralCode = async (req, res) => {
+    const { referralCode } = req.body;
+    try {
+        const user = await User.findOne({referralCode});
+        
+        if(user){
+            res.status(200).json({message: "Valid referral code"});
+        }
+        else{
+            res.status(404).json({message: "Invalid referral code"});
+        }
+    }
+    catch (error) {
+        console.error("Error validating referral code:", error);
+        res.status(500).json({ message: "Failed to validate referral code." });
+    }
+}

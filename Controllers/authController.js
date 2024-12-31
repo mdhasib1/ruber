@@ -22,6 +22,8 @@ exports.register = async (req, res) => {
     if (user)
       return res.status(400).json({ message: "Email already registered" });
 
+    const referralCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+
     const { otp, otpExpires } = generateOtp();
 
     user = new User({
@@ -29,6 +31,7 @@ exports.register = async (req, res) => {
       lastName,
       email,
       phone,
+      referralCode,
       address,
       timeZone,
       otp,

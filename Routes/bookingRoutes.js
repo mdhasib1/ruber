@@ -11,6 +11,7 @@ const {
   getBookingById,
   completePendingPayment,
   getBookingMonitoringData,
+  PartnerBookings,
 } = require("../Controllers/BookingControllers");
 const { authenticateToken,  authorizeAdmin } = require('../middlewares/authMiddleware');
 
@@ -27,6 +28,7 @@ module.exports = (io) => {
   router.get("/pending", authenticateToken, (req, res) => getPendingBookings(req, res, io));
   router.post("/complete-payment", (req, res) => completePendingPayment(req, res, io));
   router.get("/monitoring", authenticateToken, (req, res) => getBookingMonitoringData(req, res, io));
+  router.get("/partner/my-booking", authenticateToken, (req, res) => PartnerBookings(req, res, io));
   // router.get("/:id", (req, res) => getBookingById(req, res, io));
 
   return router;
